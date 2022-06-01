@@ -25,10 +25,42 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+tasks.withType<Test>().configureEach {
+    // Set a system property for where the test kit directory should live.
+    // Used in IntegrationTest.kt
+    systemProperty("testKitDirectory", file("$buildDir/testKit"))
+}
+
+// For testing plugins with gradle testKit
+// https://docs.gradle.org/current/userguide/test_kit.html
+// Write the plugin's classpath to a file to share with the tests
+tasks.register("createClasspathManifest") {
+    val outputDir = file("$buildDir/$name")
+
+    inputs.files(sourceSets.main.get().runtimeClasspath)
+    outputs.dir(outputDir)
+
+    // create a file with all our main and test runtime dependencies in it that
+    // funcational tests can load in as their dependecnies.
+    doLast {
+        outputDir.mkdirs()
+        file("$outputDir/plugin-classpath.txt").writeText(
+            (sourceSets.main.get().runtimeClasspath.files + sourceSets.test.get().runtimeClasspath.files).joinToString("\n")
+        )
+    }
+}
+
+
 dependencies {
+    testRuntimeOnly(files(tasks["createClasspathManifest"]))
+
     implementation(libs.android.gradlePlugin)
     implementation(libs.kotlin.gradlePlugin)
     implementation(libs.spotless.gradlePlugin)
+
+    testImplementation(gradleTestKit())
+    testImplementation(libs.junit4)
+    testImplementation(libs.truth)
 }
 
 gradlePlugin {
