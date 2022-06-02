@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import org.gradle.configurationcache.extensions.serviceOf
+
 plugins {
     `kotlin-dsl`
 }
@@ -61,6 +63,16 @@ dependencies {
     testImplementation(gradleTestKit())
     testImplementation(libs.junit4)
     testImplementation(libs.truth)
+
+    testRuntimeOnly(
+        files(
+            serviceOf<org.gradle.api.internal.classpath.ModuleRegistry>()
+                .getModule("gradle-tooling-api-builders")
+                .classpath
+                .asFiles
+                .first()
+        )
+    )
 }
 
 gradlePlugin {
